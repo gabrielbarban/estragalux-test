@@ -31,6 +31,7 @@ import {
   Email as EmailIcon,
   Home as HomeIcon,
   Apartment as ApartmentIcon,
+  FilterList as FilterIcon,
 } from '@mui/icons-material';
 import { gql } from '@apollo/client';
 
@@ -44,14 +45,9 @@ const formatDate = (dateString: string | null | undefined): string => {
       return 'Invalid date';
     }
     
-    // Adjust for timezone offset and format
-    const adjustedDate = new Date(
-      date.getTime() - date.getTimezoneOffset() * 60000
-    );
-    
-    return adjustedDate.toLocaleString('en-GB', {
+    return date.toLocaleString('pt-PT', {
       day: '2-digit',
-      month: '2-digit',
+      month: '2-digit', 
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
@@ -149,6 +145,7 @@ interface ApartmentOwnerFormData {
 const ApartmentOwners: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingOwner, setEditingOwner] = useState<ApartmentOwner | null>(null);
+  const [selectedBuildingFilter, setSelectedBuildingFilter] = useState<string>('');
   const [formData, setFormData] = useState<ApartmentOwnerFormData>({
     name: '',
     email: '',
@@ -162,6 +159,12 @@ const ApartmentOwners: React.FC = () => {
   const [createOwner] = useMutation(CREATE_APARTMENT_OWNER);
   const [updateOwner] = useMutation(UPDATE_APARTMENT_OWNER);
   const [deleteOwner] = useMutation(DELETE_APARTMENT_OWNER);
+
+  const filteredOwners = selectedBuildingFilter 
+    ? data?.apartmentOwners.filter((owner: ApartmentOwner) => 
+        owner.building?.id === selectedBuildingFilter
+      )
+    : data?.apartmentOwners;
 
   const handleOpenDialog = (owner?: ApartmentOwner) => {
     if (owner) {
@@ -263,8 +266,29 @@ const ApartmentOwners: React.FC = () => {
         </Button>
       </Box>
 
+      <Box mb={3}>
+        <FormControl sx={{ minWidth: 200 }}>
+          <InputLabel>Filter by Building</InputLabel>
+          <Select
+            value={selectedBuildingFilter}
+            label="Filter by Building"
+            onChange={(e: SelectChangeEvent) => setSelectedBuildingFilter(e.target.value)}
+            startAdornment={<FilterIcon sx={{ mr: 1 }} />}
+          >
+            <MenuItem value="">
+              <em>All Buildings</em>
+            </MenuItem>
+            {buildingsData?.buildings.map((building: Building) => (
+              <MenuItem key={building.id} value={building.id}>
+                {building.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+
       <Grid container spacing={3}>
-        {data?.apartmentOwners.map((owner: ApartmentOwner) => (
+        {filteredOwners?.map((owner: ApartmentOwner) => (
           <Grid item xs={12} sm={6} md={4} key={owner.id}>
             <Card>
               <CardContent>
@@ -394,4 +418,4 @@ const ApartmentOwners: React.FC = () => {
   );
 };
 
-export default ApartmentOwners; 
+export default ApartmentOwners;
