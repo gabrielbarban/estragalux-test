@@ -179,6 +179,34 @@ const formatDate = (dateString: string | null | undefined): string => {
   }
 };
 
+/*
+const formatDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return 'Not set';
+  
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      console.error('Invalid date string:', dateString);
+      return 'Invalid date';
+    }
+    
+    const adjustedDate = new Date(
+      date.getTime() - date.getTimezoneOffset() * 60000
+    );
+    
+    return adjustedDate.toLocaleString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (error) {
+    console.error('Date parsing error:', error);
+    return 'Invalid date';
+  }
+};
+*/
 const Payments: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
@@ -446,12 +474,24 @@ const Payments: React.FC = () => {
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Month (YYYY-MM)"
+                label="Mês de Pagamento"
+                type="month"
                 value={formData.month}
-                onChange={(e) => setFormData({ ...formData, month: e.target.value })}
-                placeholder="2024-01"
+                onChange={(e) => {
+                  setFormData({ ...formData, month: e.target.value });
+                }}
                 InputProps={{
                   startAdornment: <CalendarIcon sx={{ mr: 1 }} />,
+                }}
+                helperText="Clique para selecionar o ano e mês"
+                inputProps={{
+                  min: "2020-01",
+                  max: "2030-12",
+                }}
+                sx={{
+                  '& input::-webkit-calendar-picker-indicator': {
+                    cursor: 'pointer',
+                  },
                 }}
               />
             </Grid>
