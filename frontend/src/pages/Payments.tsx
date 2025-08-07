@@ -30,6 +30,7 @@ import {
   AttachMoney as MoneyIcon,
   CalendarToday as CalendarIcon,
   Person as PersonIcon,
+  FilterList as FilterIcon,
 } from '@mui/icons-material';
 import { gql } from '@apollo/client';
 
@@ -179,37 +180,12 @@ const formatDate = (dateString: string | null | undefined): string => {
   }
 };
 
-/*
-const formatDate = (dateString: string | null | undefined): string => {
-  if (!dateString) return 'Not set';
-  
-  try {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      console.error('Invalid date string:', dateString);
-      return 'Invalid date';
-    }
-    
-    const adjustedDate = new Date(
-      date.getTime() - date.getTimezoneOffset() * 60000
-    );
-    
-    return adjustedDate.toLocaleString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  } catch (error) {
-    console.error('Date parsing error:', error);
-    return 'Invalid date';
-  }
-};
-*/
 const Payments: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [monthFilter, setMonthFilter] = useState<string>('');
+  const [ownerFilter, setOwnerFilter] = useState<string>('');
   const [formData, setFormData] = useState<PaymentFormData>({
     apartmentOwnerId: '',
     amount: '',
@@ -223,6 +199,26 @@ const Payments: React.FC = () => {
   const [createPayment] = useMutation(CREATE_PAYMENT);
   const [updatePayment] = useMutation(UPDATE_PAYMENT);
   const [deletePayment] = useMutation(DELETE_PAYMENT);
+
+  const filteredPayments = data?.payments.filter((payment: Payment) => {
+    if (statusFilter && payment.status !== statusFilter) return false;
+    if (monthFilter && payment.month !== monthFilter) return false;
+    if (ownerFilter && payment.apartmentOwner.id !== ownerFilter) return false;
+    return true;
+  });
+
+  const generateMonthOptions = () => {
+    const months = [];
+    for (let year = 2020; year <= 2030; year++) {
+      for (let month = 1; month <= 12; month++) {
+        const monthStr = `${year}-${month.toString().padStart(2, '0')}`;
+        months.push(monthStr);
+      }
+    }
+    return months;
+  };
+
+  const monthOptions = generateMonthOptions();
 
   const handleOpenDialog = (payment?: Payment) => {
     if (payment) {
@@ -262,7 +258,6 @@ const Payments: React.FC = () => {
   const handleSubmit = async () => {
     try {
       if (editingPayment) {
-        // FIXED: Removed apartmentOwnerId from update mutation
         console.log('Updating payment with input:', {
           id: editingPayment.id,
           input: {
@@ -369,8 +364,65 @@ const Payments: React.FC = () => {
         </Button>
       </Box>
 
+      <Box mb={3} display="flex" gap={2} flexWrap="wrap">
+        <FormControl sx={{ minWidth: 150 }}>
+          <InputLabel>Filter by Status</InputLabel>
+          <Select
+            value={statusFilter}
+            label="Filter by Status"
+            onChange={(e: SelectChangeEvent) => setStatusFilter(e.target.value)}
+            startAdornment={<FilterIcon sx={{ mr: 1 }} />}
+          >
+            <MenuItem value="">
+              <em>All Status</em>
+            </MenuItem>
+            <MenuItem value="pending">Pending</MenuItem>
+            <MenuItem value="paid">Paid</MenuItem>
+            <MenuItem value="overdue">Overdue</MenuItem>
+          </Select>
+        </FormControl>
+
+        <FormControl sx={{ minWidth: 150 }}>
+          <InputLabel>Filter by Month</InputLabel>
+          <Select
+            value={monthFilter}
+            label="Filter by Month"
+            onChange={(e: SelectChangeEvent) => setMonthFilter(e.target.value)}
+            startAdornment={<CalendarIcon sx={{ mr: 1 }} />}
+          >
+            <MenuItem value="">
+              <em>All Months</em>
+            </MenuItem>
+            {monthOptions.map((month) => (
+              <MenuItem key={month} value={month}>
+                {month}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl sx={{ minWidth: 200 }}>
+          <InputLabel>Filter by Owner</InputLabel>
+          <Select
+            value={ownerFilter}
+            label="Filter by Owner"
+            onChange={(e: SelectChangeEvent) => setOwnerFilter(e.target.value)}
+            startAdornment={<PersonIcon sx={{ mr: 1 }} />}
+          >
+            <MenuItem value="">
+              <em>All Owners</em>
+            </MenuItem>
+            {ownersData?.apartmentOwners.map((owner: ApartmentOwner) => (
+              <MenuItem key={owner.id} value={owner.id}>
+                {owner.name} (Apt {owner.apartmentNumber})
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+
       <Grid container spacing={3}>
-        {data?.payments.map((payment: Payment) => (
+        {filteredPayments?.map((payment: Payment) => (
           <Grid item xs={12} sm={6} md={4} key={payment.id}>
             <Card>
               <CardContent>
@@ -525,7 +577,7 @@ const Payments: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained">
+          <Button onClick={handleSubmit} variant="variant">
             {editingPayment ? 'Update' : 'Create'}
           </Button>
         </DialogActions>
@@ -534,4 +586,4 @@ const Payments: React.FC = () => {
   );
 };
 
-export default Payments; 
+export default Payments;
